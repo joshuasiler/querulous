@@ -3,9 +3,9 @@ package com.twitter.querulous.evaluator
 import java.sql.ResultSet
 import com.twitter.xrayspecs.TimeConversions._
 import net.lag.configgy.ConfigMap
-import database._
-import query._
-
+import com.twitter.querulous.database._
+import com.twitter.querulous.query._
+import com.twitter.querulous.StatsCollector
 
 object QueryEvaluatorFactory {
   def fromConfig(config: ConfigMap, databaseFactory: DatabaseFactory, queryFactory: QueryFactory): QueryEvaluatorFactory = {
@@ -32,43 +32,24 @@ object QueryEvaluator extends QueryEvaluatorFactory {
     new StandardQueryEvaluatorFactory(databaseFactory, queryFactory)
   }
 
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]) = {
-    createEvaluatorFactory()(dbhosts, dbname, username, password, urlOptions)
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String) = {
+    createEvaluatorFactory()(dbhosts, dbname, username, password)
+  }
+
+  def apply(dbhosts: List[String], username: String, password: String) = {
+    createEvaluatorFactory()(dbhosts, username, password)
   }
 }
 
 trait QueryEvaluatorFactory {
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]): QueryEvaluator
-
-  def apply(dbhost: String, dbname: String, username: String, password: String, urlOptions: Map[String, String]): QueryEvaluator = {
-    apply(List(dbhost), dbname, username, password, urlOptions)
-  }
-
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String): QueryEvaluator = {
-    apply(dbhosts, dbname, username, password, null)
-  }
-
   def apply(dbhost: String, dbname: String, username: String, password: String): QueryEvaluator = {
-    apply(List(dbhost), dbname, username, password, null)
+    apply(List(dbhost), dbname, username, password)
   }
-
-  def apply(dbhost: String, username: String, password: String): QueryEvaluator = {
-    apply(List(dbhost), null, username, password, null)
-  }
-
-  def apply(dbhosts: List[String], username: String, password: String): QueryEvaluator = {
-    apply(dbhosts, null, username, password, null)
-  }
-
- def apply(config: ConfigMap): QueryEvaluator = {
-    apply(
-      config.getList("hostname").toList,
-      config.getString("database").getOrElse(null),
-      config("username"),
-      config.getString("password").getOrElse(null),
-      // this is so lame, why do I have to cast this back?
-      config.getConfigMap("url_options").map(_.asMap.asInstanceOf[Map[String, String]]).getOrElse(null)
-    )
+  def apply(dbhost: String, username: String, password: String): QueryEvaluator = apply(List(dbhost), username, password)
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String): QueryEvaluator
+  def apply(dbhosts: List[String], username: String, password: String): QueryEvaluator
+  def apply(config: ConfigMap): QueryEvaluator = {
+    apply(config.getList("hostname").toList, config("database"), config("username"), config("password"))
   }
 }
 

@@ -18,15 +18,19 @@ class AutoDisablingQueryEvaluatorFactory(
       disableDuration)
   }
 
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]) = {
-    chainEvaluator(queryEvaluatorFactory(dbhosts, dbname, username, password, urlOptions))
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String) = {
+    chainEvaluator(queryEvaluatorFactory(dbhosts, dbname, username, password))
+  }
+
+  def apply(dbhosts: List[String], username: String, password: String) = {
+    chainEvaluator(queryEvaluatorFactory(dbhosts, username, password))
   }
 }
 
-class AutoDisablingQueryEvaluator (
+class AutoDisablingQueryEvaluator(
   queryEvaluator: QueryEvaluator,
-  protected val disableErrorCount: Int,
-  protected val disableDuration: Duration) extends QueryEvaluatorProxy(queryEvaluator) with AutoDisabler {
+  disableErrorCount: Int,
+  disableDuration: Duration) extends QueryEvaluatorProxy(queryEvaluator) {
 
   private var disabledUntil: Time = Time.never
   private var consecutiveErrors = 0
@@ -52,4 +56,24 @@ class AutoDisablingQueryEvaluator (
     }
   }
 
+  private def noteOperationOutcome(success: Boolean) {
+    synchronized {
+      if (success) {
+        consecutiveErrors = 0
+      } else {
+        consecutiveErrors += 1
+        if (consecutiveErrors >= disableErrorCount) {
+          disabledUntil = disableDuration.fromNow
+        }
+      }
+    }
+  }
+
+  private def throwIfDisabled() {
+    synchronized {
+      if (Time.now < disabledUntil) {
+        throw new SQLException("Server is temporarily disabled")
+      }
+    }
+  }
 }

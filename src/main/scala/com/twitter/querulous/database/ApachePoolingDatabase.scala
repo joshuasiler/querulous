@@ -13,13 +13,12 @@ class ApachePoolingDatabaseFactory(
   checkConnectionHealthOnReservation: Boolean,
   evictConnectionIfIdleFor: Duration) extends DatabaseFactory {
 
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]) = {
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String) = {
     val pool = new ApachePoolingDatabase(
       dbhosts,
       dbname,
       username,
       password,
-      urlOptions,
       minOpenConnections,
       maxOpenConnections,
       checkConnectionHealthWhenIdleFor,
@@ -28,6 +27,8 @@ class ApachePoolingDatabaseFactory(
       evictConnectionIfIdleFor)
     pool
   }
+
+  def apply(dbhosts: List[String], username: String, password: String) = apply(dbhosts, null, username, password)
 }
 
 class ApachePoolingDatabase(
@@ -35,7 +36,6 @@ class ApachePoolingDatabase(
   dbname: String,
   username: String,
   password: String,
-  urlOptions: Map[String, String],
   minOpenConnections: Int,
   maxOpenConnections: Int,
   checkConnectionHealthWhenIdleFor: Duration,
@@ -52,14 +52,12 @@ class ApachePoolingDatabase(
   config.maxWait = maxWaitForConnectionReservation.inMillis
 
   config.timeBetweenEvictionRunsMillis = checkConnectionHealthWhenIdleFor.inMillis
-  config.testWhileIdle = false
+  config.testWhileIdle = true
   config.testOnBorrow = checkConnectionHealthOnReservation
   config.minEvictableIdleTimeMillis = evictConnectionIfIdleFor.inMillis
 
-  config.lifo = false
-
   private val connectionPool = new GenericObjectPool(null, config)
-  private val connectionFactory = new DriverManagerConnectionFactory(url(dbhosts, dbname, urlOptions), username, password)
+  private val connectionFactory = new DriverManagerConnectionFactory(url(dbhosts, dbname), username, password)
   private val poolableConnectionFactory = new PoolableConnectionFactory(
     connectionFactory,
     connectionPool,
@@ -68,7 +66,6 @@ class ApachePoolingDatabase(
     false,
     true)
   private val poolingDataSource = new PoolingDataSource(connectionPool)
-  poolingDataSource.setAccessToUnderlyingConnectionAllowed(true)
 
   def close(connection: Connection) {
     try {

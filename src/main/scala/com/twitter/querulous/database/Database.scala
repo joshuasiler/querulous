@@ -1,4 +1,8 @@
 package com.twitter.querulous.database
+import com.twitter.querulous.StatsCollector
+import com.twitter.querulous.Timeout
+import com.twitter.querulous.database.{ApachePoolingDatabase, SingleConnectionDatabase, TimingOutDatabase, StatsCollectingDatabase}
+
 
 import java.sql.Connection
 import com.twitter.xrayspecs.TimeConversions._
@@ -34,13 +38,8 @@ object DatabaseFactory {
 }
 
 trait DatabaseFactory {
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]): Database
-
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String): Database =
-    apply(dbhosts, dbname, username, password, null)
-
-  def apply(dbhosts: List[String], username: String, password: String): Database =
-    apply(dbhosts, null, username, password, null)
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String): Database
+  def apply(dbhosts: List[String], username: String, password: String): Database
 }
 
 trait Database {
@@ -57,14 +56,10 @@ trait Database {
     }
   }
 
-  protected def url(dbhosts: List[String], dbname: String, urlOptions: Map[String, String]) = {
+  protected def url(dbhosts: List[String], dbname: String) = {
     val dbnameSegment = if (dbname == null) "" else ("/" + dbname)
-    val urlOptsSegment = if (urlOptions == null) {
-      "?useUnicode=true&characterEncoding=UTF-8"
-    } else {
-      "?" + urlOptions.keys.map( k => k + "=" + urlOptions(k) ).mkString("&")
-    }
-
-    "jdbc:mysql://" + dbhosts.mkString(",") + dbnameSegment + urlOptsSegment
+    "jdbc:mysql://" + dbhosts.mkString(",") + dbnameSegment + "?" + urlOptions
   }
+
+  def urlOptions = "useUnicode=true&characterEncoding=UTF-8"
 }

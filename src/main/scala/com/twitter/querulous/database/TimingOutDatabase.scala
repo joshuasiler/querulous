@@ -1,4 +1,6 @@
 package com.twitter.querulous.database
+import com.twitter.querulous.FutureTimeout
+import com.twitter.querulous.TimeoutException
 
 import java.sql.{Connection, SQLException}
 import java.util.concurrent.{TimeoutException => JTimeoutException, _}
@@ -6,13 +8,15 @@ import com.twitter.xrayspecs.Duration
 import net.lag.logging.Logger
 
 
-class SqlDatabaseTimeoutException(msg: String, val timeout: Duration) extends SQLException(msg)
+class SqlDatabaseTimeoutException(msg: String) extends SQLException(msg)
 
 class TimingOutDatabaseFactory(databaseFactory: DatabaseFactory, poolSize: Int, queueSize: Int, openTimeout: Duration, initialTimeout: Duration, maxConnections: Int) extends DatabaseFactory {
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]) = {
-    val dbLabel = if (dbname != null) dbname else "(null)"
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String) = {
+    new TimingOutDatabase(databaseFactory(dbhosts, dbname, username, password), dbhosts, dbname, poolSize, queueSize, openTimeout, initialTimeout, maxConnections)
+  }
 
-    new TimingOutDatabase(databaseFactory(dbhosts, dbname, username, password, urlOptions), dbhosts, dbLabel, poolSize, queueSize, openTimeout, initialTimeout, maxConnections)
+  def apply(dbhosts: List[String], username: String, password: String) = {
+    new TimingOutDatabase(databaseFactory(dbhosts, username, password), dbhosts, "(null)", poolSize, queueSize, openTimeout, initialTimeout, maxConnections)
   }
 }
 
@@ -32,13 +36,13 @@ class TimingOutDatabase(database: Database, dbhosts: List[String], dbname: Strin
       }
     } catch {
       case e: TimeoutException =>
-        throw new SqlDatabaseTimeoutException(dbhosts.mkString(",") + "/" + dbname, wait)
+        throw new SqlDatabaseTimeoutException(dbhosts.mkString(",") + "/" + dbname)
     }
   }
 
   private def greedilyInstantiateConnections() = {
     log.info("Connecting to %s:%s", dbhosts.mkString(","), dbname)
-    (0 until maxConnections).force.map { i =>
+    (0 until maxConnections).map { i => // was "(0 until maxConnections).force.map { i =>" in scala 2.7
       getConnection(initialTimeout)
     }.map(_.close)
   }

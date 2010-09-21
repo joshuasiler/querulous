@@ -6,7 +6,8 @@ import com.twitter.xrayspecs.Duration
 import com.twitter.xrayspecs.TimeConversions._
 import net.lag.configgy.ConfigMap
 import net.lag.logging.Logger
-
+import com.twitter.querulous.FutureTimeout
+import com.twitter.querulous.StatsCollector
 
 trait QueryFactory {
   def apply(connection: Connection, queryString: String, params: Any*): Query

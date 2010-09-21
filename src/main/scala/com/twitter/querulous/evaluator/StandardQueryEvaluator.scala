@@ -10,8 +10,13 @@ class StandardQueryEvaluatorFactory(
   databaseFactory: DatabaseFactory,
   queryFactory: QueryFactory) extends QueryEvaluatorFactory {
 
-  def apply(dbhosts: List[String], dbname: String, username: String, password: String, urlOptions: Map[String, String]) = {
-    val database = databaseFactory(dbhosts, dbname, username, password, urlOptions)
+  def apply(dbhosts: List[String], dbname: String, username: String, password: String) = {
+    val database = databaseFactory(dbhosts, dbname, username, password)
+    new StandardQueryEvaluator(database, queryFactory)
+  }
+
+  def apply(dbhosts: List[String], username: String, password: String) = {
+    val database = databaseFactory(dbhosts, username, password)
     new StandardQueryEvaluator(database, queryFactory)
   }
 }

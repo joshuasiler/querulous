@@ -1,7 +1,6 @@
 package com.twitter.querulous.unit
 
 import java.sql.ResultSet
-import net.lag.configgy.Configgy
 import org.specs.Specification
 import org.specs.mock.{JMocker, ClassMocker}
 import com.twitter.querulous.test.FakeQuery
@@ -13,10 +12,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 class TimingOutQuerySpec extends Specification with JMocker with ClassMocker {
   "TimingOutQuery" should {
-    val config = Configgy.config.configMap("db")
-    val connection = TestEvaluator.testDatabaseFactory(List("localhost"), config("username"), config("password")).open()
     val timeout = 1.second
-    val cancelTimeout = 0.millis
     val resultSet = mock[ResultSet]
 
     "timeout" in {
@@ -29,7 +25,7 @@ class TimingOutQuerySpec extends Specification with JMocker with ClassMocker {
           super.select(f)
         }
       }
-      val timingOutQuery = new TimingOutQuery(query, connection, timeout, cancelTimeout)
+      val timingOutQuery = new TimingOutQuery(query, timeout)
 
       timingOutQuery.select { r => 1 } must throwA[SqlQueryTimeoutException]
       latch.getCount mustEqual 0
@@ -40,7 +36,7 @@ class TimingOutQuerySpec extends Specification with JMocker with ClassMocker {
       val query = new FakeQuery(List(resultSet)) {
         override def cancel() = { latch.countDown() }
       }
-      val timingOutQuery = new TimingOutQuery(query, connection, timeout, cancelTimeout)
+      val timingOutQuery = new TimingOutQuery(query, timeout)
 
       timingOutQuery.select { r => 1 }
       latch.getCount mustEqual 1

@@ -1,5 +1,6 @@
 package com.twitter.querulous
 // import com.twitter.querulous.Timeout
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.{ThreadFactory, TimeoutException => JTimeoutException, _}
 import java.util.concurrent.atomic.AtomicInteger
 import com.twitter.xrayspecs.Duration

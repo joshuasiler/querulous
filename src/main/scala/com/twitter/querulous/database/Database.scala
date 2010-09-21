@@ -1,7 +1,5 @@
 package com.twitter.querulous.database
 import com.twitter.querulous.StatsCollector
-import com.twitter.querulous.Timeout
-
 import java.sql.Connection
 import com.twitter.xrayspecs.TimeConversions._
 import net.lag.configgy.ConfigMap

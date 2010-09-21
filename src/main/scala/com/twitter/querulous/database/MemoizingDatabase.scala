@@ -1,5 +1,4 @@
 package com.twitter.querulous.database
-import com.twitter.querulous.database.DatabaseFactory
 
 import scala.collection.mutable
 

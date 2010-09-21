@@ -1,8 +1,6 @@
 package com.twitter.querulous.database
 import com.twitter.querulous.StatsCollector
 import com.twitter.querulous.Timeout
-import com.twitter.querulous.database.{ApachePoolingDatabase, SingleConnectionDatabase, TimingOutDatabase, StatsCollectingDatabase}
-
 
 import java.sql.Connection
 import com.twitter.xrayspecs.TimeConversions._
